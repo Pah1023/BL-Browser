@@ -110,7 +110,7 @@ struct SimEvent
 
 //Con::printf
 BLFUNC_EXTERN(void, , Printf, const char* format, ...);
-
+BLFUNC_EXTERN(void, , call, int argc, const char* argv[]);
 extern const char *StringTableEntry(const char *str, bool caseSensitive = false);
 extern DWORD StringTable;
 BLFUNC_EXTERN(bool, , initGame, int argc, const char **argv);

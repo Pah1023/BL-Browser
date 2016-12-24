@@ -18,7 +18,7 @@ static DWORD GlobalVars; // global variable dictionary pointer
 
 						 //Con::printf
 PrintfFn Printf;
-
+callFn call;
 //Con::lookupNamespace
 LookupNamespaceFn LookupNamespace;
 
@@ -206,11 +206,10 @@ bool torque_init()
 
 	//Printf is required for debug output, so find it first
 	Printf = (PrintfFn)ScanFunc("\x8B\x4C\x24\x04\x8D\x44\x24\x08\x50\x6A\x00\x6A\x00\xE8\x00\x00\x00\x00\x83\xC4\x0C\xC3", "xxxxxxxxxxxxxx????xxxx");
-
 	//Do nothing if we don't find it :(
 	if (!Printf)
 		return false;
-
+	call = (callFn)0x4A7870;// TODO: Get a signature for this function.
 	ShapeNameHudOnRender = (ShapeNameHudOnRenderFn)ScanFunc("\x81\xec\x00\x00\x00\x00\x53\x8b\xd9\x8a\x83\xc9\x00\x00\x00\x84\xc0\x55\x56\x57\x89\x5c\x24\x14", "xx????xxxxxxxxxxxxxxxxxx");
 
 	//First find all the functions

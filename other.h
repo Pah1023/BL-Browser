@@ -26,3 +26,19 @@ struct TextureObject
 	bool holding;
 	int refCount;
 };
+#define AWSHOOK_EVENT_NA 0
+#define AWSHOOK_EVENT_KEYBOARD 1
+#define AWSHOOK_EVENT_MOUSE 2
+
+struct Event {
+	unsigned int type = 0;
+
+};
+struct KeyboardEvent : public Event {
+	unsigned int type = 1;
+
+
+};
+struct MouseEvent : public Event {
+	unsigned int type = 2;
+};
