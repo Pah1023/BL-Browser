@@ -80,24 +80,18 @@ void ts_AWS_setTextureID(SimObject* object, int argc, const char** argv) {
 	textureID = atoi(argv[1]);
 	Printf("AWS: Assigned textureID to %u.\r\n%s <<<", atoi(argv[1]), argv[1]);
 }
-void ts_AWS_clientCmdLoadURL(SimObject* object, int argc, const char** argv) {
-	SetGlobalVariable("AWS::URL", argv[1]);	
-}
-/* Causes crash, unsure why.
 void ts_AWS_bindTexture(SimObject* object, int argc, const char** argv) {
 	TextureObject* texture;
-	unsigned int count = 0;
-	int width, height, format, red, green, blue, alpha;
 	const char* string = "Add-Ons/Print_Screen_Cinema/prints/Cinema.png";
 	for (texture = (TextureObject*)0x7868E0; texture; texture = texture->next) {
-		if (strcmp(texture->texFileName, string) == 0) {
+		if (texture->texFileName != NULL && _stricmp(texture->texFileName, string) == 0) {
 			textureID = texture->texGLName;
 			Printf("Found textureID; %u", texture->texGLName);
 			break;
 		}
 	}
 }
-*/
+
 DWORD WINAPI doStuff(LPVOID lpParam) {
 	Awesomium::WebConfig wConfig;
 	wConfig.log_level = Awesomium::kLogLevel_Verbose;
@@ -156,7 +150,10 @@ void firstRun() {
 	ConsoleFunction(NULL, "AWS_setTextureID", ts_AWS_setTextureID, "(int textureID) - Sets the ID of the texture for the web view to use.", 2, 2);
 	ConsoleFunction(NULL, "AWS_debug", ts_AWS_debug, "() - Toggles debugging.", 1, 1);
 	ConsoleFunction(NULL, "AWS_scrollWheel", ts_AWS_scrollWheel,"(int vert, int horiz) - sends a mouse wheel event.", 3, 3);
-	// ConsoleFunction(NULL, "AWS_bindTexture", ts_AWS_bindTexture, "() - Binds the cinema texture.", 1, 1); -- See above.
+	ConsoleFunction(NULL, "AWS_bindTexture", ts_AWS_bindTexture, "() - Binds the cinema texture.", 1, 1);
+	Eval("function clientCmdAWS_LoadYoutube(%id){AWS_LoadUrl(\"https://Pah1023.github.io/index.html?videoid=\"@%id);}");
+	Eval("function clientCmdAWS_PlayYoutube(%id, %start){AWS_LoadUrl(\"https://Pah1023.github.io/index.html?videoid=\"@%id@\"&start=\"@%start);}");
+	Eval("function clientCmdAWS_ClearLink(){AWS_LoadUrl(\"\");}");
 	Printf("Functions declared.");
 	detour_SwapBuffers = new MologieDetours::Detour<intFn>((intFn)0x4237D0, (intFn)hook_SwapBuffers);
 	Printf("Passed detour.");
