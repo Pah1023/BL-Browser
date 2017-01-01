@@ -1,7 +1,7 @@
 #pragma once
 #include <Windows.h>
+#include "gl.h"
 #include "torque.h"
-#include <gl/GL.h>
 #include <Awesomium\WebCore.h>
 #include <Awesomium\STLHelpers.h>
 #include <Awesomium\BitmapSurface.h>
@@ -18,6 +18,7 @@ char pageURL[4096];
 char texBuffer[1024 * 1024 * 4];
 char texBufferB[512 * 512 * 4];
 char texBufferC[256 * 256 * 4];
+char texBufferD[128 * 128 * 4];
 HANDLE thread;
 HANDLE blockland;
 typedef int(*intFn)();
@@ -33,14 +34,14 @@ void ts_AWS_dumpTextures(SimObject* object, int argc, const char** argv) {
 	int width, height, format, red, green, blue, alpha;
 	for (texture = (TextureObject*)0x7868E0; texture; texture = texture->next) {
 		count++;
-		glBindTexture(GL_TEXTURE_2D, texture->texGLName);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_RED_SIZE, &red);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_GREEN_SIZE, &green);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_BLUE_SIZE, &blue);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_ALPHA_SIZE, &alpha);
+		AWS_glBindTexture(GL_TEXTURE_2D, texture->texGLName);
+		AWS_glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+		AWS_glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+		AWS_glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+		AWS_glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_RED_SIZE, &red);
+		AWS_glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_GREEN_SIZE, &green);
+		AWS_glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_BLUE_SIZE, &blue);
+		AWS_glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_ALPHA_SIZE, &alpha);
 		Printf("\nTexture [%u]: %s\n"
 			"  OpenGL ID: %u\n"
 			"  GL_TEXTURE_WIDTH: %u\n"
@@ -63,11 +64,11 @@ int __fastcall hook_SwapBuffers() {
 		
 	}
 	if (textureID != 0 && isDirty) {
-
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 1024, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer);
-		glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 512, 512, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBufferB);
-		glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, 256, 256, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBufferC);
+		AWS_glBindTexture(GL_TEXTURE_2D, textureID);
+		AWS_glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1024, 1024, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer);
+		AWS_glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 512, 512, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBufferB);
+		AWS_glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, 256, 256, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBufferC);
+		AWS_glTexSubImage2D(GL_TEXTURE_2D, 3, 0, 0, 256, 256, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBufferD);
 		isDirty = false;
 	}
 	return a;
@@ -125,6 +126,9 @@ DWORD WINAPI doStuff(LPVOID lpParam) {
 							texBufferB[x * 512 * 4 + y * 4 + z] = texBuffer[x * 8192 + y * 8 + z];
 							if (x & 1 && y & 1) {
 								texBufferC[(x >> 1) * 256 * 4 + (y >> 1) * 4 + z] = texBuffer[x * 8192 + y * 8 + z];
+								if (x & 2 && y & 2) {
+									texBufferD[(x >> 2) * 128 * 4 + (y >> 2) * 4 + z] = texBuffer[x * 8192 + y * 8 + z];
+								}
 							}
 						}
 					}
@@ -145,6 +149,7 @@ void ts_AWS_scrollWheel(SimObject* obj, int argc, const char** argv) {
 	*/
 }
 void firstRun() {
+	initGL();
 	ConsoleFunction(NULL, "AWS_dumpTextures", ts_AWS_dumpTextures, "() - Dumps all of the OpenGL textures.", 1, 1);
 	ConsoleFunction(NULL, "AWS_LoadUrl", ts_AWS_LoadUrl, "(String URL) - Loads a URL into the Awesomium Web View.", 2, 2);
 	ConsoleFunction(NULL, "AWS_setTextureID", ts_AWS_setTextureID, "(int textureID) - Sets the ID of the texture for the web view to use.", 2, 2);
