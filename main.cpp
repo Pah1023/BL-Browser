@@ -1,5 +1,6 @@
 #pragma once
 #include <Windows.h>
+#include <AclAPI.h>
 #include "gl.h"
 #include "torque.h"
 #include <Awesomium\WebCore.h>
@@ -21,6 +22,7 @@ char texBufferC[256 * 256 * 4];
 char texBufferD[128 * 128 * 4];
 HANDLE thread;
 HANDLE blockland;
+HANDLE event;
 typedef int(*intFn)();
 MologieDetours::Detour<intFn> *detour_SwapBuffers;
 MologieDetours::Detour<intFn> *detour_attachOpenGL;
@@ -63,6 +65,7 @@ int __fastcall hook_SwapBuffers() {
 		Printf("textureID: %u, isDirty: %s, loadPage: %s", textureID, isDirty ? "true" : "false", loadPage ? "true" : "false");
 		
 	}
+	SetEvent(event);
 	if (textureID != 0 && isDirty) {
 		AWS_glBindTexture(GL_TEXTURE_2D, textureID);
 		AWS_glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1024, 1024, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer);
@@ -107,6 +110,8 @@ DWORD WINAPI doStuff(LPVOID lpParam) {
 	wView = wCore->CreateWebView(1024, 768, wSession, Awesomium::kWebViewType_Offscreen);
 	Awesomium::BitmapSurface* surface = (Awesomium::BitmapSurface*)(wView->surface());
 	while (!quit) {
+		WaitForSingleObject(event, 100);
+		ResetEvent(event);
 		wCore->Update();
 		
 		if (loadPage) {
@@ -138,7 +143,15 @@ DWORD WINAPI doStuff(LPVOID lpParam) {
 			}
 		}
 	}
-	return true;
+	Printf("Quit event received, destroying view.");
+	wView->Destroy();
+	Printf("Destroying session.");
+	wSession->Release();
+	Printf("Shutting diown.");
+	wCore->Shutdown();
+	Printf("Returning.");
+	SetEvent(event);
+	return 0;
 }
 
 void ts_AWS_scrollWheel(SimObject* obj, int argc, const char** argv) {
@@ -163,6 +176,7 @@ void firstRun() {
 	detour_SwapBuffers = new MologieDetours::Detour<intFn>((intFn)0x4237D0, (intFn)hook_SwapBuffers);
 	Printf("Passed detour.");
 	blockland = GetCurrentThread();
+	event = CreateEvent(NULL, TRUE, FALSE, "blawsevent");
 	thread = CreateThread(NULL, 0, doStuff, 0, 0, NULL);
 	isInit = true;
 }
@@ -188,11 +202,11 @@ int deinit() {
 		delete detour_SwapBuffers;
 	if (detour_attachOpenGL != NULL)
 		delete detour_attachOpenGL;
-	WaitForSingleObject(thread, INFINITE);
+	WaitForSingleObject(event, INFINITE);
+	TerminateThread(thread, 0);
 	CloseHandle(thread);
-	wView->Destroy();
-	wSession->Release();
-	wCore->Shutdown();
+	CloseHandle(event);
+	
 	return true;
 }
 int __stdcall DllMain(HINSTANCE h, unsigned long reason, void* reserved) {
