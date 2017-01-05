@@ -87,6 +87,7 @@ void ts_AWS_setTextureID(SimObject* object, int argc, const char** argv) {
 void ts_AWS_bindTexture(SimObject* object, int argc, const char** argv) {
 	TextureObject* texture;
 	const char* string = "Add-Ons/Print_Screen_Cinema/prints/Cinema.png";
+	textureID = 0;
 	for (texture = (TextureObject*)0x7868E0; texture; texture = texture->next) {
 		if (texture->texFileName != NULL && _stricmp(texture->texFileName, string) == 0) {
 			textureID = texture->texGLName;
@@ -172,6 +173,7 @@ void firstRun() {
 	Eval("function clientCmdAWS_LoadYoutube(%id){AWS_LoadUrl(\"https://Pah1023.github.io/index.html?videoid=\"@%id);}");
 	Eval("function clientCmdAWS_PlayYoutube(%id, %start){AWS_LoadUrl(\"https://Pah1023.github.io/index.html?videoid=\"@%id@\"&start=\"@%start);}");
 	Eval("function clientCmdAWS_ClearLink(){AWS_LoadUrl(\"\");}");
+	Eval("package AWSPackage{function clientCmdMissionStartPhase3(%a0, %a1, %a2){Parent::clientCmdMissionStartPhase3(%a0, %a1, %a2);AWS_BindTexture();}function flushTextureCache(){Parent::flushTextureCache();schedule(100,0,AWS_BindTexture);}};");
 	Printf("Functions declared.");
 	detour_SwapBuffers = new MologieDetours::Detour<intFn>((intFn)0x4237D0, (intFn)hook_SwapBuffers);
 	Printf("Passed detour.");
