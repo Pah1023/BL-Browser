@@ -29,16 +29,32 @@ struct TextureObject
 #define AWSHOOK_EVENT_NA 0
 #define AWSHOOK_EVENT_KEYBOARD 1
 #define AWSHOOK_EVENT_MOUSE 2
-
-struct Event {
-	unsigned int type = 0;
-
-};
-struct KeyboardEvent : public Event {
-	unsigned int type = 1;
-
-
-};
-struct MouseEvent : public Event {
-	unsigned int type = 2;
+enum KMEType { NA, Keyboard, Mouse, Scroll};
+struct KeyMouseEvent {
+	
+	KMEType event;
+	union {
+		struct {
+			unsigned int mX, mY, mBtn;
+		};
+		struct {
+			unsigned int kChar;
+			union {
+				unsigned int kFlags;
+				struct {
+					unsigned int kShift : 1;
+					unsigned int kCtrl : 1;
+					unsigned int kAlt : 1;
+					unsigned int kMeta : 1;
+					unsigned int kKeypad : 1;
+					unsigned int kAutorepeat : 1;
+				};
+			};
+			unsigned int kExcess;
+		};
+		struct {
+			unsigned int sX, sY, sExcess;
+		};
+		unsigned long long data;
+	};
 };

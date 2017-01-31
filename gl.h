@@ -13,3 +13,7 @@ GLFUNC(unsigned int, __stdcall, AWS_glGetError, void);
 GLFUNC(void, __stdcall, AWS_glTexParameteri, unsigned int, unsigned int, int);
 GLFUNC(void, __stdcall, AWS_glEnable, unsigned int);
 GLFUNC(void, __stdcall, AWS_glTexSubImage2D, unsigned int, int, int, int, int, int, unsigned int, unsigned int, void*);
+GLFUNC(const char*, __stdcall, AWS_glGetString, unsigned int);
+GLFUNC(void, __stdcall, AWS_glGenerateMipmap, unsigned int);
+extern char* glVersion;
+extern unsigned int glMajor;

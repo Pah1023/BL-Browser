@@ -1,8 +1,5 @@
 #include <Windows.h>
 #include "gl.h"
-/*GLFUNC(void, __stdcall, glBindTexture, unsigned int target, unsigned int texture);
-GLFUNC(void, __stdcall, glGetTeLevelParameteriv, unsigned int target, int level, unsigned int pname, int *params);
-GLFUNC(void, __stdcall, glTexImage2D, unsigned int target, int level, int internalFormat, int width, int height, int border, unsigned int format, unsigned int type, const void* pixels);*/
 AWS_glBindTextureGLFN AWS_glBindTexture;
 AWS_glGetTexLevelParameterivGLFN AWS_glGetTexLevelParameteriv;
 AWS_glTexImage2DGLFN AWS_glTexImage2D;
@@ -10,6 +7,11 @@ AWS_glGetErrorGLFN AWS_glGetError;
 AWS_glTexParameteriGLFN AWS_glTexParameteri;
 AWS_glEnableGLFN AWS_glEnable;
 AWS_glTexSubImage2DGLFN AWS_glTexSubImage2D;
+AWS_glGetStringGLFN AWS_glGetString;
+AWS_glGenerateMipmapGLFN AWS_glGenerateMipmap;
+char* glVersion = NULL;
+unsigned int glMajor;
+
 void *GetAnyGLFuncAddress(const char *name)
 {
 	void *p = (void *)wglGetProcAddress(name);
@@ -31,4 +33,6 @@ void initGL() {
 	AWS_glTexParameteri = (AWS_glTexParameteriGLFN)GetAnyGLFuncAddress("glTexParameteri");
 	AWS_glEnable = (AWS_glEnableGLFN)GetAnyGLFuncAddress("glEnable");
 	AWS_glTexSubImage2D = (AWS_glTexSubImage2DGLFN)GetAnyGLFuncAddress("glTexSubImage2D");
+	AWS_glGetString = (AWS_glGetStringGLFN)GetAnyGLFuncAddress("glGetString"); // GL_VERSION
+	glMajor = 0;
 }
