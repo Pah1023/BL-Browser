@@ -261,6 +261,7 @@ void firstRun() {
 	Eval("function clientCmdAWS_ClearLink(){AWS_LoadUrl(\"\");}");
 	Eval("package AWSPackage{function clientCmdMissionStartPhase3(%a0, %a1, %a2){Parent::clientCmdMissionStartPhase3(%a0, %a1, %a2);AWS_BindTexture();}function flushTextureCache(){Parent::flushTextureCache();schedule(100,0,AWS_BindTexture);}function disconnect(%b){AWS_LoadUrl(\"\");Parent::disconnect(%b);}}; activatePackage(\"AWSPackage\");");
 	Eval("function clientCmdAWS_MouseEvent(%x,%y,%b){AWS_MouseEvent(%x,%y,%b);}");
+	Eval("function clientCmdAWS_Version(){commandToServer('AWS_Version', 0, 2, 0);}")
 	Printf("Functions declared.");
 	detour_SwapBuffers = new MologieDetours::Detour<intFn>((intFn)0x4237D0, (intFn)hook_SwapBuffers);
 	Printf("Passed detour.");
