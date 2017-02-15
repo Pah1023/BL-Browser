@@ -9,7 +9,9 @@
 
 #include "other.h"
 #include "detours\detours.h"
-#define AWSHOOK_VERS 0.20
+#define AWSHOOK_VERS_MAJ "0"
+#define AWSHOOK_VERS_MIN "2"
+#define AWSHOOK_VERS_REV "1"
 struct {
 	char quit : 1;
 	char isDirty : 1;
@@ -18,14 +20,14 @@ struct {
 	char isInit : 1;
 
 } flags;
-char pageURL[4096];
-char texBuffer_0[1024 * 1024 * 4];
-char texBuffer_1[512 * 512 * 4];
-char texBuffer_2[256 * 256 * 4];
-char texBuffer_3[128 * 128 * 4];
-char texBuffer_4[64 * 64 * 4];
-char texBuffer_5[32 * 32 * 4];
-char texBuffer_6[16 * 16 * 4];
+char *pageURL = new char[4096];
+char *texBuffer_0 = new char[1024 * 1024 * 4];
+char *texBuffer_1 = new char[512 * 512 * 4];
+char *texBuffer_2 = new char[256 * 256 * 4];
+char *texBuffer_3 = new char[128 * 128 * 4];
+char *texBuffer_4 = new char[64 * 64 * 4];
+char *texBuffer_5 = new char[32 * 32 * 4];
+char *texBuffer_6 = new char[16 * 16 * 4];
 
 HANDLE thread;
 HANDLE blockland;
@@ -77,12 +79,21 @@ int __fastcall hook_SwapBuffers() {
 	if (textureID != 0 && flags.isDirty) {
 		AWS_glBindTexture(GL_TEXTURE_2D, textureID);
 		AWS_glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1024, 1024, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer_0);
+		if(!AWS_glGenerateMipmap) {
 			AWS_glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 512, 512, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer_1);
 			AWS_glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, 256, 256, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer_2);
 			AWS_glTexSubImage2D(GL_TEXTURE_2D, 3, 0, 0, 128, 128, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer_3);
 			AWS_glTexSubImage2D(GL_TEXTURE_2D, 4, 0, 0, 64, 64, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer_4);
 			AWS_glTexSubImage2D(GL_TEXTURE_2D, 5, 0, 0, 32, 32, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer_5);
 			AWS_glTexSubImage2D(GL_TEXTURE_2D, 6, 0, 0, 16, 16, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texBuffer_6);
+		}
+		else {
+			AWS_glGenerateMipmap(GL_TEXTURE_2D);
+			AWS_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			AWS_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			AWS_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			AWS_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		}
 		flags.isDirty = false;
 	}
 	return a;
@@ -112,6 +123,7 @@ DWORD WINAPI doStuff(LPVOID lpParam) {
 	Awesomium::WebConfig wConfig;
 	wConfig.log_level = Awesomium::kLogLevel_Verbose;
 	wConfig.log_path = Awesomium::WSLit("./Awesomium/Output.log");
+	wConfig.user_agent = Awesomium::WSLit("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1003 Safari/535.19 Awesomium/1.7.5.1 BLBrowser/0.2.1");
 	wCore = Awesomium::WebCore::Initialize(wConfig);
 	Awesomium::WebPreferences wPreferences;
 	wPreferences.allow_scripts_to_open_windows = false;
@@ -171,13 +183,25 @@ DWORD WINAPI doStuff(LPVOID lpParam) {
 			wView->LoadURL(Awesomium::WebURL(Awesomium::WSLit(pageURL)));
 			flags.loadPage = false;
 		}
+		if (wView->IsCrashed()) {
+			Printf("Web View crashed.");
+			wView->Stop();
+			wView->Destroy();
+			wView = wCore->CreateWebView(1024, 768, wSession, Awesomium::kWebViewType_Offscreen);
+			surface = NULL;
+		}
 		if (surface == NULL) {
 			surface = (Awesomium::BitmapSurface*)(wView->surface());
 		}
 		else {
 			if (surface->is_dirty()) {
+				if (surface->buffer() == NULL) {
+					Printf("Buffer is NULL.");
+					continue;
+				}
 				memcpy(texBuffer_0, surface->buffer(), 1024 * 768 * 4);
 				// There's probably a better way to do this, works for now at little to no performance hit.
+				if(!AWS_glGenerateMipmap)
 				for (int x = 0; x < 512; x++) {
 					for (int y = 0; y < 512; y++) {
 						for (int z = 0; z < 4; z++) {
@@ -261,13 +285,15 @@ void firstRun() {
 	Eval("function clientCmdAWS_ClearLink(){AWS_LoadUrl(\"\");}");
 	Eval("package AWSPackage{function clientCmdMissionStartPhase3(%a0, %a1, %a2){Parent::clientCmdMissionStartPhase3(%a0, %a1, %a2);AWS_BindTexture();}function flushTextureCache(){Parent::flushTextureCache();schedule(100,0,AWS_BindTexture);}function disconnect(%b){AWS_LoadUrl(\"\");Parent::disconnect(%b);}}; activatePackage(\"AWSPackage\");");
 	Eval("function clientCmdAWS_MouseEvent(%x,%y,%b){AWS_MouseEvent(%x,%y,%b);}");
-	Eval("function clientCmdAWS_Version(){commandToServer('AWS_Version', 0, 2, 0);}");
-	Printf("Functions declared.");
+	SetGlobalVariable("AWSHOOK::MIN", AWSHOOK_VERS_MIN);
+	SetGlobalVariable("AWSHOOK::MAJ", AWSHOOK_VERS_MAJ);
+	SetGlobalVariable("AWSHOOK::REV", AWSHOOK_VERS_REV);
+	Eval("function clientCmdAWS_Version(){commandToServer('AWS_Version', $AWSHOOK::MAJ, $AWSHOOK::MIN, $AWSHOOK::REV);}");
 	detour_SwapBuffers = new MologieDetours::Detour<intFn>((intFn)0x4237D0, (intFn)hook_SwapBuffers);
-	Printf("Passed detour.");
 	blockland = GetCurrentThread();
 	event = CreateEvent(NULL, TRUE, FALSE, "blawsevent");
 	thread = CreateThread(NULL, 0, doStuff, 0, 0, NULL);
+	Printf("Blockland Browser version v%s.%s.%s loaded.", AWSHOOK_VERS_MAJ, AWSHOOK_VERS_MIN, AWSHOOK_VERS_REV);
 	flags.isInit = true;
 }
 
@@ -287,6 +313,11 @@ int init() {
 }
 int deinit() {
 	flags.quit = true;
+	WaitForSingleObject(event, 1000);
+	WaitForSingleObject(event, 1000);
+	TerminateThread(thread, 0);
+	CloseHandle(thread);
+	CloseHandle(event);
 	if (detour_SwapBuffers != NULL)
 		delete detour_SwapBuffers;
 	if (detour_attachOpenGL != NULL)
@@ -298,11 +329,7 @@ int deinit() {
 	delete[] texBuffer_4;
 	delete[] texBuffer_5;
 	delete[] texBuffer_6;
-	WaitForSingleObject(event, 750);
-	TerminateThread(thread, 0);
 	flags.isInit = false;
-	CloseHandle(thread);
-	CloseHandle(event);
 	
 	return true;
 }

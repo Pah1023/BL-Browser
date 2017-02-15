@@ -8,7 +8,7 @@ AWS_glTexParameteriGLFN AWS_glTexParameteri;
 AWS_glEnableGLFN AWS_glEnable;
 AWS_glTexSubImage2DGLFN AWS_glTexSubImage2D;
 AWS_glGetStringGLFN AWS_glGetString;
-AWS_glGenerateMipmapGLFN AWS_glGenerateMipmap;
+AWS_glGenerateMipmapGLFN AWS_glGenerateMipmap = NULL;
 char* glVersion = NULL;
 unsigned int glMajor;
 
@@ -34,5 +34,6 @@ void initGL() {
 	AWS_glEnable = (AWS_glEnableGLFN)GetAnyGLFuncAddress("glEnable");
 	AWS_glTexSubImage2D = (AWS_glTexSubImage2DGLFN)GetAnyGLFuncAddress("glTexSubImage2D");
 	AWS_glGetString = (AWS_glGetStringGLFN)GetAnyGLFuncAddress("glGetString"); // GL_VERSION
+	AWS_glGenerateMipmap = (AWS_glGenerateMipmapGLFN)GetAnyGLFuncAddress("glGenerateMipmap");
 	glMajor = 0;
 }
